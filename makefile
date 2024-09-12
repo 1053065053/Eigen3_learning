@@ -2,8 +2,8 @@
 
 # 变量定义
 CXX = g++
-# CXXFLAGS = -Wall -O2 $(shell pkg-config --cflags eigen3) -fopenmp
-CXXFLAGS = -Wall -O3 $(shell pkg-config --cflags eigen3) -fopenmp
+CXXFLAGS = -Wall -g $(shell pkg-config --cflags eigen3) -fopenmp
+LDFLAGS = -lfftw3_threads -lfftw3 -lm -fopenmp
 # TARGET = eigen3omptest
 # SRCS = eigen3omptest.cpp
 # TARGET = gmres_example
@@ -18,7 +18,7 @@ all: $(TARGET)
 
 # 链接目标
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 # 编译源文件
 %.o: %.cpp $(HEADERS)
