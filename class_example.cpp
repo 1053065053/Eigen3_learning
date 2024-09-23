@@ -81,12 +81,13 @@ namespace Eigen
 
                 // Here we could simply call dst.noalias() += lhs.my_matrix() * rhs,
                 // but let's do something fancier (and less efficient):
-
+                double h=0.1;
                 dst(0) = 2 * rhs(0) - rhs(1);
                 for (Index i = 1; i < lhs.cols() - 1; ++i)
                     dst(i) = 2 * rhs(i) - rhs(i - 1) - rhs(i + 1);
 
                 dst(lhs.cols() - 1) = 2 * rhs(lhs.cols() - 1) - rhs(lhs.cols() - 2);
+                dst = dst/(h*h);
             }
         };
 
@@ -148,10 +149,12 @@ void gmres_test()
 
 // do fft for the each row of the n by m real matrix
 // note:我发现如果plan已经设定了，把in和out的指针指向其他地方是不行的
-void fft_r2c_mr(std::complex<double> *in_p, std::complex<double> *out_p, int n)
+void fft_r2c(Eigen::VectorXd &vec_in, Eigen::VectorXcd &vec_out)
 {
-    fftw_complex *in = reinterpret_cast<fftw_complex *>(in_p);
-    fftw_complex *out = reinterpret_cast<fftw_complex *>(out_p);
+    int n = vec_in.size();
+    Eigen::VectorXcd vec_in_c = vec_in;
+    fftw_complex *in = reinterpret_cast<fftw_complex *>(vec_in_c.data());
+    fftw_complex *out = reinterpret_cast<fftw_complex *>(vec_out.data());
 
     fftw_plan plan = fftw_plan_dft_1d(n, in, out,FFTW_FORWARD, FFTW_ESTIMATE);
 
@@ -163,15 +166,15 @@ void fft_r2c_mr(std::complex<double> *in_p, std::complex<double> *out_p, int n)
     // 在函数调用结束前清理
     fftw_cleanup();
 
-    out_p = reinterpret_cast<std::complex<double> *>(out_p);
+    //out_p = reinterpret_cast<std::complex<double> *>(out);
 
 }
 
-void ifft_c2c_mr(std::complex<double> *in_p, std::complex<double> *out_p, int n)
+void ifft_c2c(Eigen::VectorXcd &vec_in, Eigen::VectorXcd &vec_out)
 {
-    // double *in = matrix_in.data();
-    fftw_complex *out = reinterpret_cast<fftw_complex *>(out_p);
-    fftw_complex *in = reinterpret_cast<fftw_complex *>(in_p);
+    int n = vec_in.size();
+    fftw_complex *out = reinterpret_cast<fftw_complex *>(vec_out.data());
+    fftw_complex *in = reinterpret_cast<fftw_complex *>(vec_in.data());
 
     fftw_plan plan = fftw_plan_dft_1d(n, in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
 
@@ -183,7 +186,7 @@ void ifft_c2c_mr(std::complex<double> *in_p, std::complex<double> *out_p, int n)
     // 在函数调用结束前清理
     fftw_cleanup();
 
-    out_p = reinterpret_cast<std::complex<double> *>(out_p);
+    //out_p = reinterpret_cast<std::complex<double> *>(out_p);
 
 }
 
@@ -211,25 +214,30 @@ void Eigen_vector_test()
 void fft_test()
 {
     using Eigen::VectorXcd;
+    using Eigen::VectorXd;
 
     int n = 10;
-    VectorXcd vec1;
+    VectorXd vec0;
+    vec0.setLinSpaced(n, 0, 9);
+    VectorXcd vec1 =vec0;
     Eigen::VectorXcd vec_res(n), vec_res2(n);
-    vec1.setLinSpaced(n, 0, 9);
+    
 
-    fft_r2c_mr(vec1.data(), vec_res.data(), n);
+    fft_r2c(vec0, vec_res);
 
-    std::cout << vec1.transpose() << std::endl;
+    std::cout << vec0.transpose() << std::endl;
     std::cout << vec_res.transpose() << std::endl;
 
-    ifft_c2c_mr(vec_res.data(), vec_res2.data(), n);
+    ifft_c2c(vec_res, vec_res2);
 
      std::cout << vec_res2.transpose()/n << std::endl;
+
+     std::cout<< (vec0.array()*vec_res2.array()).transpose()<<std::endl;
 }
 
 int main()
 {
-    // gmres_test();
+     //gmres_test();
     //  Eigen_vector_test();
     fft_test();
     return 0;
